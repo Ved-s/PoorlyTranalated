@@ -28,6 +28,8 @@ namespace PoorlyTranslated
             "tt", "ug", "uk", "ur", "uz", "vi", "xh", "yi", "yo", "zh-CN", "zh-TW", "zu" 
         };
 
+        public static long TranslationsDone;
+
         public const string AutoLang = "auto";
 
         public Translator() 
@@ -62,6 +64,7 @@ namespace PoorlyTranslated
                         builder.Append(result);
                 }
 
+                Interlocked.Increment(ref TranslationsDone);
                 return builder.ToString();
             }
 

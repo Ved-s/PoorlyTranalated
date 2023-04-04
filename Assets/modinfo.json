@@ -1,9 +1,9 @@
 ﻿{
     "id": "ved_s.poorlytranslated",
     "name": "Poorly Translated Rain World",
-    "authors": "Ved_s",
-    "version": "0.2",
-    "description": "Poorly-translate your Rain World! Translate your wet world well!\n\nCurrently only supports strings.txt, but more will be added in the future!",
+    "authors": "Code: Ved_s, Thumbnail: Klen's Flame",
+    "version": "0.3",
+    "description": "Poorly-translate your Rain World! Translate your wet world well!\n\nCurrently supports menu text, generic iterator dialogues and pearls.",
     "requirements": [],
     "requirements_names": [],
     "checksum_override_version": false

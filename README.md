@@ -1,8 +1,10 @@
 # Poorly translated Rain Rorld
 
 Poorly-translate your Rain World! Translate your wet world well!
+All text is uniquely translated every time using Google Translate.
+Currently supports menu text, generic iterator dialogues and pearls.
 
-Currently only supports strings.txt, but more will be added in the future!
+Please note that current version may be unstable and will require restarting Rain World if it gets stuck on translating.
 
 ## Downloads
 

@@ -15,8 +15,6 @@ namespace PoorlyTranslated
         protected internal ManualLogSource Logger { get; internal set; } = null!;
 
         public virtual string Status { get; set; } = "";
-        public virtual bool UpdateStatusEveryTick { get; set; } = false;
-
         public abstract Task Run();
 
         public virtual void Update() { }

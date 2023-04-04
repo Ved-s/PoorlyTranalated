@@ -18,7 +18,7 @@ using MonoMod.RuntimeDetour.HookGen;
 
 namespace PoorlyTranslated
 {
-    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "0.2")]
+    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "0.3")]
     public class PoorlyTranslated : BaseUnityPlugin
     {
         public static PoorlyTranslated Instance = null!;
@@ -30,6 +30,8 @@ namespace PoorlyTranslated
         public static SyncedJobRunner Runner = null!;
 
         public static FieldWrapper<InitializationScreen.InitializationStep> CurreniInitializationStepField = new(null, typeof(InitializationScreen), "currentStep");
+
+        public static Regex ConversationRegex = new(@"^\d+(-.+)?.txt$", RegexOptions.Compiled);
 
         public PoorlyTranslated()
         {
@@ -124,13 +126,26 @@ namespace PoorlyTranslated
 
         public Task VerifyLanguageTranslations(InGameTranslator.LanguageID lang, bool force = false)
         {
-            Logger.LogInfo($"Verifying strings for {lang.value}");
-            
-            string stringsBasePath = $"text/text_{LocalizationTranslator.LangShort(lang).ToLower()}/strings.txt";
-            if (!force && File.Exists(Path.Combine(Mod.path, stringsBasePath)))
-                return Task.CompletedTask;
+            Logger.LogInfo($"Verifying files for {lang.value}");
+            string path = $"text/text_{LocalizationTranslator.LangShort(lang).ToLower()}";
 
-            return Runner.EnqueueJob(new StringsJob(stringsBasePath, lang));
+            List<Task> tasks = EnumerateFileNames(path)
+                .Select(f => (path: Path.Combine(path, f), name: f))
+                .Where(f => force || !File.Exists(Path.Combine(Mod.path, f.path)))
+                .Select(f => VerifyFileTranslations(f.path, f.name, lang))
+                .ToList();
+
+            return Task.WhenAll(tasks);
+        }
+
+        public Task VerifyFileTranslations(string path, string filename, InGameTranslator.LanguageID lang)
+        {
+            if (filename == "strings.txt")
+                return Runner.EnqueueJob(new StringsJob(path, lang));
+            else if (ConversationRegex.IsMatch(filename) && lang == RainWorld.inGameTranslator.currentLanguage)
+                return Runner.EnqueueJob(new ConversationJob(path, lang));
+
+            return Task.CompletedTask;
         }
 
         public static string ConvertLanguage(InGameTranslator.LanguageID lang)
@@ -153,21 +168,60 @@ namespace PoorlyTranslated
             return "en";
         }
 
+        public static IEnumerable<string> EnumerateFileNames(string path)
+        {
+            HashSet<string> returnedFileNames = new();
+
+            foreach (string dir in EnumAssetDirs())
+            {
+                string dirpath = Path.Combine(dir, path);
+                if (!Directory.Exists(dirpath))
+                    continue;
+
+                foreach (string file in Directory.EnumerateFiles(dirpath))
+                {
+                    string filename = Path.GetFileName(file);
+
+                    if (returnedFileNames.Contains(filename))
+                        continue;
+                    returnedFileNames.Add(filename);
+                    yield return filename;
+                }
+            }
+        }
+
         public static IEnumerable<string> ResolveFiles(string path)
         {
-            string basefile = Path.Combine(Custom.RootFolderDirectory(), path);
-            if (File.Exists(basefile))
-               yield return basefile;
+            foreach (string dir in EnumAssetDirs())
+            {
+                string filepath = Path.Combine(dir, path);
+                if (File.Exists(filepath))
+                    yield return filepath;
+            }
+        }
 
+        public static string? ResolveFile(string path)
+        {
+            foreach (string dir in EnumAssetDirs())
+            {
+                string filepath = Path.Combine(dir, path);
+                if (File.Exists(filepath))
+                    return filepath;
+            }
+            return null;
+        }
+
+        public static IEnumerable<string> EnumAssetDirs()
+        {
             foreach (ModManager.Mod mod in ModManager.ActiveMods)
             {
                 if (mod == Mod)
                     continue;
 
-                string modpath = Path.Combine(mod.path, path);
-                if (File.Exists(modpath))
-                    yield return modpath;
+                yield return mod.path;
             }
+
+            yield return Custom.RootFolderDirectory();
         }
     }
 }

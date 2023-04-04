@@ -13,6 +13,7 @@ namespace PoorlyTranslated
     {
         Queue<TKey> KeyQueue;
         Dictionary<TKey, string> Dictionary;
+        private readonly int NumThreads;
         object Lock = new();
 
         List<Thread> Threads = new();
@@ -27,13 +28,23 @@ namespace PoorlyTranslated
         TaskCompletionSource<bool> TaskCompletion;
         bool TaskSignaled = false;
 
-        public ThreadedStringsTranslator(Dictionary<TKey, string> dictionary, int threads, string language, int iterations)
+        static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("Translator");
+
+        public ThreadedStringsTranslator(Dictionary<TKey, string> dictionary, int threads, string language, int iterations) :
+            this(dictionary, dictionary.Keys, threads, language, iterations)
+        {
+            
+        }
+        public ThreadedStringsTranslator(Dictionary<TKey, string> dictionary, IEnumerable<TKey> keys, int threads, string language, int iterations)
         {
             Dictionary = dictionary;
-            KeyQueue = new(Dictionary.Keys);
+            NumThreads = threads;
+            KeyQueue = new(keys);
             Language = language;
             Iterations = iterations;
             TaskCompletion = new();
+
+            threads = Math.Min(threads, KeyQueue.Count);
 
             for (int i = 0; i < threads; i++)
             {
@@ -41,6 +52,29 @@ namespace PoorlyTranslated
                 thread.Name = $"Translation worker {i}";
                 thread.Start();
                 Threads.Add(thread);
+            }
+        }
+
+        public void Poke()
+        {
+            Threads.RemoveAll(t => !t.IsAlive);
+            int spawnThreads = Math.Min(KeyQueue.Count, NumThreads - Threads.Count);
+
+            for (int i = 0; i < spawnThreads; i++)
+            {
+                Thread thread = new(ThreadWorker);
+                thread.Name = $"Translation worker {i}";
+                thread.Start();
+                Threads.Add(thread);
+            }
+
+            lock (Lock) 
+            {
+                if (Remaining == 0 && !TaskSignaled)
+                {
+                    TaskCompletion.SetResult(true);
+                    TaskSignaled = true;
+                }
             }
         }
 
@@ -52,22 +86,41 @@ namespace PoorlyTranslated
 
             while (true)
             {
-                TKey key;
-                string text;
-                lock (Lock)
+                TKey key = default!;
+                bool validKey = false;
+                try
                 {
-                    if (KeyQueue.Count == 0)
-                        break;
-                    key = KeyQueue.Dequeue();
-                    Interlocked.Increment(ref InProgress);
-                    text = Dictionary[key];
-                }
-                string newText = translator.PoorlyTranslate(lang, text, iter);
+                    
+                    string text;
+                    lock (Lock)
+                    {
+                        if (KeyQueue.Count == 0)
+                            break;
+                        key = KeyQueue.Dequeue();
+                        validKey = true;
+                        Interlocked.Increment(ref InProgress);
+                        text = Dictionary[key];
+                    }
+                    string newText = translator.PoorlyTranslate(lang, text, iter);
 
-                lock (Lock)
+                    lock (Lock)
+                    {
+                        Dictionary[key] = newText;
+                        validKey = false;
+                        Interlocked.Decrement(ref InProgress);
+                    }
+                }
+                catch (Exception e)
                 {
-                    Dictionary[key] = newText;
-                    Interlocked.Decrement(ref InProgress);
+                    Logger.LogError($"{e.GetType().Name}: {e.Message}");
+                    if (validKey)
+                    {
+                        lock (Lock)
+                        {
+                            KeyQueue.Enqueue(key);
+                        }
+                        return;
+                    }
                 }
             }
             lock (Lock)

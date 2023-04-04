@@ -18,15 +18,13 @@ namespace PoorlyTranslated
         ThreadedStringsTranslator<string>? Translator;
         PoorStringProvider StatusProvider;
 
-        public override bool UpdateStatusEveryTick => true;
-
         public override string Status => !Running ? "Job is not running" : StatusProvider.Template
             .Replace("<LINE>", "\n")
             .Replace("<Remaining>", Translator?.Remaining.ToString() ?? "Unknown");
 
         public StringsJob(string filePath, InGameTranslator.LanguageID language)
         {
-            StatusProvider = new($"Translating strings for {language.value}...<LINE><Remaining> strings remaining", PoorlyTranslated.ConvertLanguage(language), 120);
+            StatusProvider = new($"Translating strings into {language.value} (<Remaining> strings remaining)", PoorlyTranslated.ConvertLanguage(language), 120);
 
             FilePath = filePath;
             Language = language;
@@ -35,6 +33,7 @@ namespace PoorlyTranslated
         public override void Update()
         {
             StatusProvider.Update();
+            Translator?.Poke();
         }
 
         public override async Task Run()
