@@ -10,4 +10,4 @@ Please note that current version may be unstable and will require restarting Rai
 
 No direct download link yet
 
-[Steam workshop link](https://steamcommunity.com/sharedfiles/filedetails/?id=2957533918)
+[Steam workshop link](https://steamcommunity.com/sharedfiles/filedetails/?id=2957668973)
