@@ -1,0 +1,10 @@
+﻿{
+    "id": "ved_s.poorlytranslated",
+    "name": "Poorly Translated Rain World",
+    "authors": "Ved_s",
+    "version": "0.2",
+    "description": "Poorly-translate your Rain World! Translate your wet world well!\n\nCurrently only supports strings.txt, but more will be added in the future!",
+    "requirements": [],
+    "requirements_names": [],
+    "checksum_override_version": false
+}
