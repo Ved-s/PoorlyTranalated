@@ -8,4 +8,4 @@ Currently only supports strings.txt, but more will be added in the future!
 
 No direct download link yet
 
-[Steam workshop link](https://steamcommunity.com/sharedfiles/filedetails/?id=2957533918&result=1)
+[Steam workshop link](https://steamcommunity.com/sharedfiles/filedetails/?id=2957533918)
