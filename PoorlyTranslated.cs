@@ -29,23 +29,12 @@ namespace PoorlyTranslated
         public static bool Translated;
         public static SyncedJobRunner Runner = null!;
 
-        public static FieldWrapper<InitializationScreen.InitializationStep> CurreniInitializationStepField = new(null, typeof(InitializationScreen), "currentStep");
-
         public static Regex ConversationRegex = new(@"^\d+(-.+)?.txt$", RegexOptions.Compiled);
 
         public PoorlyTranslated()
         {
             Instance = this;
-            On.Menu.InitializationScreen.Update += InitializationScreen_Update;
-            On.Menu.OptionsMenu.SetCurrentlySelectedOfSeries += OptionsMenu_SetCurrentlySelectedOfSeries;
-            On.RainWorld.OnModsInit += RainWorld_OnModsInit;
-        }
-
-        private void RainWorld_OnModsInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
-        {
-            orig(self);
-
-            MachineConnector.SetRegisteredOI("ved_s.poorlytranslated", new TranslationsOI());
+            Patches.Apply();
         }
 
         public void Update()
@@ -54,40 +43,14 @@ namespace PoorlyTranslated
             ThreadedStringsTranslator.Poke();
         }
 
-        private void OptionsMenu_SetCurrentlySelectedOfSeries(On.Menu.OptionsMenu.orig_SetCurrentlySelectedOfSeries orig, OptionsMenu self, string series, int to)
-        {
-            if (series == "Language")
-            {
-                InGameTranslator.LanguageID prevlang = RainWorld.options.language;
-                InGameTranslator.LanguageID lang = InGameTranslator.LanguageID.Parse(to);
-                RainWorld.options.language = lang;
-                InGameTranslator.LoadFonts(lang, null);
-
-                Task t = VerifyLanguageTranslations(lang);
-                if (!t.IsCompleted)
-                {
-                    Task.Run(async () =>
-                    {
-                        await t;
-                        RainWorld.options.language = prevlang;
-                        self.SetCurrentlySelectedOfSeries(series, to);
-                    });
-                    return;
-                }
-                RainWorld.options.language = prevlang;
-            }
-            orig(self, series, to);
-        }
-
-        private void InitializationScreen_Update(On.Menu.InitializationScreen.orig_Update orig, InitializationScreen self)
+        internal static void InitScreenUpdate(InitializationScreen screen, ref InitializationScreen.InitializationStep step)
         {
             if (!Translated)
             {
-                var step = CurreniInitializationStepField.Get(self);
                 if (step == InitializationScreen.InitializationStep.WAIT_FOR_MOD_INIT_ASYNC)
                 {
                     Mod = ModManager.ActiveMods.First(m => m.id == "ved_s.poorlytranslated");
-                    RainWorld = self.manager.rainWorld;
+                    RainWorld = screen.manager.rainWorld;
                     Runner = new(RainWorld);
                     VerifyTranslations();
                     if (!Runner.HasWork)
@@ -96,7 +59,7 @@ namespace PoorlyTranslated
                     }
                     else
                     {
-                        CurreniInitializationStepField.Set(self, TranslationStep);
+                        step = TranslationStep;
                     }
                 }
                 else if (step == TranslationStep)
@@ -104,18 +67,16 @@ namespace PoorlyTranslated
                     if (Runner?.HasWork is false or null)
                     {
                         Translated = true;
-                        CurreniInitializationStepField.Set(self, InitializationScreen.InitializationStep.WAIT_FOR_MOD_INIT_ASYNC);
+                        step = InitializationScreen.InitializationStep.WAIT_FOR_MOD_INIT_ASYNC;
                         typeof(InGameTranslator)
                             .GetMethod("LoadShortStrings", BindingFlags.NonPublic | BindingFlags.Instance)
                             .Invoke(RainWorld.inGameTranslator, null);
                     }
                 }
             }
-        
-            orig(self);
         }
 
-        public Task VerifyTranslations()
+        public static Task VerifyTranslations()
         {
             Task enTask = VerifyLanguageTranslations(InGameTranslator.LanguageID.English);
 
@@ -125,9 +86,9 @@ namespace PoorlyTranslated
             return Task.WhenAll(enTask, VerifyLanguageTranslations(RainWorld.inGameTranslator.currentLanguage));
         }
 
-        public Task VerifyLanguageTranslations(InGameTranslator.LanguageID lang, bool force = false)
+        public static Task VerifyLanguageTranslations(InGameTranslator.LanguageID lang, bool force = false)
         {
-            Logger.LogInfo($"Verifying files for {lang.value}");
+            Instance.Logger.LogInfo($"Verifying files for {lang.value}");
             string path = $"text/text_{LocalizationTranslator.LangShort(lang).ToLower()}";
 
             List<Task> tasks = EnumerateFileNames(path)
@@ -139,7 +100,7 @@ namespace PoorlyTranslated
             return Task.WhenAll(tasks);
         }
 
-        public Task VerifyFileTranslations(string path, string filename, InGameTranslator.LanguageID lang)
+        public static Task VerifyFileTranslations(string path, string filename, InGameTranslator.LanguageID lang)
         {
             if (filename == "strings.txt")
                 return Runner.EnqueueJob(new StringsJob(path, lang));
@@ -169,6 +130,25 @@ namespace PoorlyTranslated
             return "en";
         }
 
+        public static string? ReadEncryptedFile(string fullPath, int displace)
+        {
+            if (!File.Exists(fullPath))
+                return null;
+
+            string str = File.ReadAllText(fullPath, Encoding.UTF8);
+            if (str[0] == '0')
+                return str.Remove(0, 1);
+
+            return Custom.xorEncrypt(str, displace).Remove(0, 1);
+        }
+
+        public static StreamWriter CreateModFile(string path)
+        {
+            string fullpath = Path.Combine(Mod.path, path);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullpath));
+            return File.CreateText(fullpath);
+        }
+
         public static IEnumerable<string> EnumerateFileNames(string path)
         {
             HashSet<string> returnedFileNames = new();
@@ -190,7 +170,6 @@ namespace PoorlyTranslated
                 }
             }
         }
-
         public static IEnumerable<string> ResolveFiles(string path)
         {
             foreach (string dir in EnumAssetDirs())
@@ -200,7 +179,6 @@ namespace PoorlyTranslated
                     yield return filepath;
             }
         }
-
         public static string? ResolveFile(string path)
         {
             foreach (string dir in EnumAssetDirs())
@@ -211,7 +189,6 @@ namespace PoorlyTranslated
             }
             return null;
         }
-
         public static IEnumerable<string> EnumAssetDirs()
         {
             foreach (ModManager.Mod mod in ModManager.ActiveMods)

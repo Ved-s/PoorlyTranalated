@@ -43,7 +43,7 @@ namespace PoorlyTranslated
                 new OpSimpleButton(new(210f, 40f), new(200f, 30f), "Regenerate current translations")
                     .AddOnClick(async f =>
                     {
-                        await PoorlyTranslated.Instance.VerifyLanguageTranslations(PoorlyTranslated.RainWorld.inGameTranslator.currentLanguage, true);
+                        await PoorlyTranslated.VerifyLanguageTranslations(PoorlyTranslated.RainWorld.inGameTranslator.currentLanguage, true);
                         PoorlyTranslated.RainWorld.inGameTranslator.shortStrings.Clear();
                         PoorlyTranslated.RainWorld.processManager.RequestMainProcessSwitch(ProcessManager.ProcessID.MainMenu);
                     }));

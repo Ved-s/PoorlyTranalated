@@ -55,13 +55,9 @@ namespace PoorlyTranslated
 
             Logger.LogInfo($"Writing strings...");
 
-            string filepath = Path.Combine(PoorlyTranslated.Mod.path, FilePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(filepath));
+            using StreamWriter writer = PoorlyTranslated.CreateModFile(FilePath);
 
-            using FileStream fs = File.Create(filepath);
-            using StreamWriter writer = new(fs);
-
-            writer.Write("0");
+            writer.Write('0');
 
             bool first = true;
             foreach (var kvp in strings.OrderBy(kvp => kvp.Key.Length))
@@ -79,15 +75,10 @@ namespace PoorlyTranslated
 
         public static void LoadStrings(string path, Dictionary<string, string> dictionary)
         {
-            string text = File.ReadAllText(path, Encoding.UTF8);
-            if (text[0] == '1')
-            {
-                text = Custom.xorEncrypt(text, 12467);
-            }
-            else if (text[0] == '0')
-            {
-                text = text.Remove(0, 1);
-            }
+            string? text = PoorlyTranslated.ReadEncryptedFile(path, 12467);
+            if (text is null)
+                return;
+
             string[] array = Regex.Split(text, "\r\n");
             for (int j = 0; j < array.Length; j++)
             {

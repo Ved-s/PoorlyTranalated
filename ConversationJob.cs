@@ -44,12 +44,10 @@ namespace PoorlyTranslated
             if (filepath is null)
                 return;
 
-            string text = File.ReadAllText(filepath, Encoding.UTF8);
-            if (text[0] != '0')
-            {
-                text = Custom.xorEncrypt(text, 54 + convId + (int)PoorlyTranslated.RainWorld.inGameTranslator.currentLanguage * 7);
-            }
-            text = text.Substring(1);
+            string? text = PoorlyTranslated.ReadEncryptedFile(filepath, 54 + convId + (int)PoorlyTranslated.RainWorld.inGameTranslator.currentLanguage * 7);
+
+            if (text is null)
+                return;
 
             string[] array = Regex.Split(text, "\r\n");
             for (int i = 0; i < array.Length; i++)
@@ -89,19 +87,15 @@ namespace PoorlyTranslated
                 count++;
             }
 
-            string outpath = Path.Combine(PoorlyTranslated.Mod.path, FilePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(outpath));
-
             if (replacements.Count > 0)
             {
                 Batch = new(replacements, PoorlyTranslated.ConvertLanguage(Language), 5);
                 await Batch.Translate();
             }
-            
-            using FileStream fs = File.Create(outpath);
-            using StreamWriter writer = new(fs);
 
-            writer.Write(0);
+            using StreamWriter writer = PoorlyTranslated.CreateModFile(FilePath);
+
+            writer.Write('0');
 
             foreach (ConvRepl repl in conv)
             {
