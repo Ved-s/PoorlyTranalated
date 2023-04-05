@@ -15,12 +15,12 @@ namespace PoorlyTranslated
         string FilePath;
         InGameTranslator.LanguageID Language;
 
-        ThreadedStringsTranslator<string>? Translator;
         PoorStringProvider StatusProvider;
+        TranslationTaskBatch<string>? Batch;
 
         public override string Status => !Running ? "Job is not running" : StatusProvider.Template
             .Replace("<LINE>", "\n")
-            .Replace("<Remaining>", Translator?.Remaining.ToString() ?? "Unknown");
+            .Replace("<Remaining>", Batch?.Remaining.ToString() ?? "Unknown");
 
         public StringsJob(string filePath, InGameTranslator.LanguageID language)
         {
@@ -33,7 +33,6 @@ namespace PoorlyTranslated
         public override void Update()
         {
             StatusProvider.Update();
-            Translator?.Poke();
         }
 
         public override async Task Run()
@@ -48,11 +47,11 @@ namespace PoorlyTranslated
 
             Logger.LogInfo($"Loaded {strings.Count} strings");
 
-            Translator = new(strings, 32, langGT, 5);
+            Batch = new(strings, langGT, 5);
 
             Logger.LogInfo($"Waiting for translator to finish...");
 
-            await Translator.Task;
+            await Batch.Translate();
 
             Logger.LogInfo($"Writing strings...");
 

@@ -19,20 +19,15 @@ namespace PoorlyTranslated
         private readonly string ConversationName;
         private readonly InGameTranslator.LanguageID Language;
 
-        public ThreadedStringsTranslator<int>? Translator;
+        public TranslationTaskBatch<int>? Batch;
 
-        public override string Status => $"Translating conversation {ConversationName} ({Translator?.Remaining.ToString() ?? "Unknown"} lines remaining)";
+        public override string Status => $"Translating conversation {ConversationName} ({Batch?.Remaining.ToString() ?? "Unknown"} lines remaining)";
 
         public ConversationJob(string filePath, InGameTranslator.LanguageID language)
         {
             FilePath = filePath;
             Language = language;
             ConversationName = Path.GetFileNameWithoutExtension(filePath);
-        }
-
-        public override void Update()
-        {
-            Translator?.Poke();
         }
 
         public override async Task Run()
@@ -94,14 +89,14 @@ namespace PoorlyTranslated
                 count++;
             }
 
-            if (replacements.Count > 0)
-            {
-                Translator = new(replacements, 32, PoorlyTranslated.ConvertLanguage(Language), 5);
-                await Translator.Task;
-            }
-
             string outpath = Path.Combine(PoorlyTranslated.Mod.path, FilePath);
             Directory.CreateDirectory(Path.GetDirectoryName(outpath));
+
+            if (replacements.Count > 0)
+            {
+                Batch = new(replacements, PoorlyTranslated.ConvertLanguage(Language), 5);
+                await Batch.Translate();
+            }
 
             using FileStream fs = File.Create(outpath);
             using StreamWriter writer = new(fs);

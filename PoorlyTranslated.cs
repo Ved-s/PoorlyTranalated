@@ -18,7 +18,7 @@ using MonoMod.RuntimeDetour.HookGen;
 
 namespace PoorlyTranslated
 {
-    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "0.3")]
+    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "0.4")]
     public class PoorlyTranslated : BaseUnityPlugin
     {
         public static PoorlyTranslated Instance = null!;
@@ -51,6 +51,7 @@ namespace PoorlyTranslated
         public void Update()
         {
             Runner?.Update();
+            ThreadedStringsTranslator.Poke();
         }
 
         private void OptionsMenu_SetCurrentlySelectedOfSeries(On.Menu.OptionsMenu.orig_SetCurrentlySelectedOfSeries orig, OptionsMenu self, string series, int to)
