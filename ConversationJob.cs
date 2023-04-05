@@ -97,7 +97,7 @@ namespace PoorlyTranslated
                 Batch = new(replacements, PoorlyTranslated.ConvertLanguage(Language), 5);
                 await Batch.Translate();
             }
-
+            
             using FileStream fs = File.Create(outpath);
             using StreamWriter writer = new(fs);
 
