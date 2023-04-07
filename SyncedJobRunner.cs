@@ -35,8 +35,10 @@ namespace PoorlyTranslated
         int Counter;
 
         static int MaxJobsCount = 10;
+        static string StatusTemplate = "<Tasks> tasks remaining, <Translations> strings translated";
 
         ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("JobRunner");
+        PoorStringProvider? StatusProvider;
         StringBuilder StatusBuilder = new();
 
         public SyncedJobRunner(RainWorld rainWorld)
@@ -46,7 +48,6 @@ namespace PoorlyTranslated
 
         public Task EnqueueJob(SyncedJob job)
         {
-            //Logger.LogInfo($"Enqueueing job {job}");
             lock (Lock)
             {
                 Jobs.Enqueue(job);
@@ -62,6 +63,7 @@ namespace PoorlyTranslated
         {
             lock (Lock)
             {
+                StatusProvider?.Update();
                 ProgressDialog?.Update();
                 foreach (SyncedJob job in ActiveJobs)
                     job.Update();
@@ -89,6 +91,8 @@ namespace PoorlyTranslated
 
                     RainWorld.processManager.fadeSprite = new FSprite("Futile_White", true);
                     RainWorld.processManager.fadeToBlack = 1;
+
+                    StatusProvider = new(StatusTemplate, PoorlyTranslated.ConvertLanguage(RainWorld.inGameTranslator.currentLanguage), 120);
                 }
                 else if (!work && ProgressDialog is not null)
                 {
@@ -96,6 +100,7 @@ namespace PoorlyTranslated
                     ProgressDialog.RemoveSprites();
                     ProgressDialog = null;
                     RainWorld.processManager.fadeToBlack = 0;
+                    StatusProvider = null;
                 }
             }
             UpdateDialogText();
@@ -110,10 +115,9 @@ namespace PoorlyTranslated
 
                 StatusBuilder.Clear();
 
-                StatusBuilder.Append(Jobs.Count);
-                StatusBuilder.Append(" tasks remaining, ");
-                StatusBuilder.Append(Translator.TranslationsDone);
-                StatusBuilder.Append(" translations done");
+                StatusBuilder.Append(StatusProvider?.Template
+                    .Replace("<Tasks>", Jobs.Count.ToString())
+                    .Replace("<Translations>", Translator.TranslationsDone.ToString()) ?? "<empty>");
 
                 foreach (SyncedJob job in ActiveJobs)
                 {
