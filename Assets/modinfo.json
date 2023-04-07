@@ -2,7 +2,7 @@
     "id": "ved_s.poorlytranslated",
     "name": "Poorly Translated Rain World",
     "authors": "Code: Ved_s, Thumbnail: Klen's Flame",
-    "version": "0.4",
+    "version": "0.4.1",
     "description": "Poorly-translate your Rain World! Translate your wet world well!\nAll text is uniquely translated every time using Google Translate.\nCurrently supports menu text, generic iterator dialogues and pearls.\n\nPlease note that current version may still be unstable and will require restarting Rain World if it gets stuck on translating.",
     "requirements": [],
     "requirements_names": [],

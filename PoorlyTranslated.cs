@@ -18,7 +18,7 @@ using MonoMod.RuntimeDetour.HookGen;
 
 namespace PoorlyTranslated
 {
-    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "0.4")]
+    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "0.4.1")]
     public class PoorlyTranslated : BaseUnityPlugin
     {
         public static PoorlyTranslated Instance = null!;

@@ -64,7 +64,6 @@ namespace PoorlyTranslated
                         await t;
                         PoorlyTranslated.RainWorld.options.language = prevlang;
                         Ignore_OptionsMenu_SetCurrentlySelectedOfSeries = true;
-                        //self.SetCurrentlySelectedOfSeries(series, to);
 
                         PoorlyTranslated.MenuLanguageSet = to;
                     });
