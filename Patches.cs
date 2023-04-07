@@ -5,6 +5,7 @@ using MonoMod.Cil;
 using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -28,6 +29,7 @@ namespace PoorlyTranslated
                 On.Menu.OptionsMenu.SetCurrentlySelectedOfSeries += OptionsMenu_SetCurrentlySelectedOfSeries;
                 On.RainWorld.OnModsInit += RainWorld_OnModsInit;
                 On.ModManager.LoadModFromJson += ModManager_LoadModFromJson;
+                On.MoreSlugcats.ChatlogData.getChatlog_ChatlogID += ChatlogData_getChatlog_ChatlogID;
             }
             catch (Exception ex)
             {
@@ -87,5 +89,14 @@ namespace PoorlyTranslated
                 mod.checksumChanged = false;
             return mod;
         }
+        private static string[] ChatlogData_getChatlog_ChatlogID(On.MoreSlugcats.ChatlogData.orig_getChatlog_ChatlogID orig, MoreSlugcats.ChatlogData.ChatlogID id)
+        {
+            string fullpath = $"{PoorlyTranslated.Mod.path}/{PoorlyTranslated.RainWorld.inGameTranslator.SpecificTextFolderDirectory()}/{id.value}.txt";
+            if (File.Exists(fullpath))
+                return File.ReadAllText(fullpath).Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).Skip(1).ToArray();
+
+            return orig(id);
+        }
+
     }
 }

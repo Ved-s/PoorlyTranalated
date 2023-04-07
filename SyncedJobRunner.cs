@@ -1,5 +1,6 @@
 ﻿using BepInEx.Logging;
 using Menu;
+using PoorlyTranslated.Jobs;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -45,7 +46,7 @@ namespace PoorlyTranslated
 
         public Task EnqueueJob(SyncedJob job)
         {
-            Logger.LogInfo($"Enqueueing job {job}");
+            //Logger.LogInfo($"Enqueueing job {job}");
             lock (Lock)
             {
                 Jobs.Enqueue(job);
@@ -163,11 +164,11 @@ namespace PoorlyTranslated
 
                 job.Running = true;
                 job.Runner = this;
-                Logger.LogInfo($"Running job {job}");
+                //Logger.LogInfo($"Running job {job}");
                 UpdateDialogText();
                 Task.Run(job.Run).Wait();
                 job.TaskCompletion.SetResult(true);
-                Logger.LogInfo($"Finished running job {job}");
+                //Logger.LogInfo($"Finished running job {job}");
                 job.Running = false;
                 job.Runner = null;
                 lock (Lock)
@@ -176,7 +177,7 @@ namespace PoorlyTranslated
                 }
             }
             UpdateDialogVisibility();
-            Logger.LogInfo("Worker thread stopped");
+            //Logger.LogInfo("Worker thread stopped");
         }
     }
 

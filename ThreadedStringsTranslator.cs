@@ -1,4 +1,5 @@
 ﻿using BepInEx.Logging;
+using PoorlyTranslated.TranslationTasks;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -64,7 +65,11 @@ namespace PoorlyTranslated
                         validTask = true;
                     }
 
-                    string newText = translator.PoorlyTranslate(task.Language, task.Text, task.Iterations);
+                    string? text = task.Text;
+                    if (text is null)
+                        continue;
+
+                    string newText = translator.PoorlyTranslate(task.Language,text, task.Iterations);
 
                     task.SetResult(newText);
                 }

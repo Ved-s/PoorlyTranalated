@@ -15,6 +15,7 @@ using System.Threading;
 using System.Reflection;
 using System.Threading.Tasks;
 using MonoMod.RuntimeDetour.HookGen;
+using PoorlyTranslated.Jobs;
 
 namespace PoorlyTranslated
 {
@@ -115,6 +116,8 @@ namespace PoorlyTranslated
                 return Runner.EnqueueJob(new StringsJob(path, lang));
             else if (ConversationRegex.IsMatch(filename) && lang == RainWorld.inGameTranslator.currentLanguage)
                 return Runner.EnqueueJob(new ConversationJob(path, lang));
+            else if (filename.StartsWith("chatlog_", StringComparison.InvariantCultureIgnoreCase) && lang == RainWorld.inGameTranslator.currentLanguage)
+                return Runner.EnqueueJob(new ChatlogJob(path, lang));
 
             return Task.CompletedTask;
         }

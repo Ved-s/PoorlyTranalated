@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PoorlyTranslated.TranslationTasks;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,7 @@ namespace PoorlyTranslated
     public abstract class TranslationTask
     {
         public abstract bool Active { get; }
-        public abstract string Text { get; }
+        public abstract string? Text { get; }
         public abstract string Language { get; }
         public abstract int Iterations { get; }
 
@@ -27,7 +28,7 @@ namespace PoorlyTranslated
             Key = key;
         }
 
-        public override string Text { get { lock (Batch.Lock) { return Batch.Dictionary.GetValueOrDefault(Key) ?? ""; } } }
+        public override string? Text { get { lock (Batch.Lock) { return Batch.Storage.TryGet(Key, out string v) ? v : null; } } }
         public override string Language => Batch.Language;
         public override int Iterations => Batch.Iterations;
 

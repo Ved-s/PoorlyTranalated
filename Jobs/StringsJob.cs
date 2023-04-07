@@ -1,4 +1,5 @@
-﻿using RWCustom;
+﻿using PoorlyTranslated.TranslationTasks;
+using RWCustom;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace PoorlyTranslated
+namespace PoorlyTranslated.Jobs
 {
     public class StringsJob : SyncedJob
     {

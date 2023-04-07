@@ -1,4 +1,5 @@
-﻿using RWCustom;
+﻿using PoorlyTranslated.TranslationTasks;
+using RWCustom;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
@@ -11,34 +12,32 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace PoorlyTranslated
+namespace PoorlyTranslated.Jobs
 {
     public class ConversationJob : SyncedJob
     {
         private readonly string FilePath;
-        private readonly string ConversationName;
+        private readonly string Name;
         private readonly InGameTranslator.LanguageID Language;
 
         public TranslationTaskBatch<int>? Batch;
 
-        public override string Status => $"Translating conversation {ConversationName} ({Batch?.Remaining.ToString() ?? "Unknown"} lines remaining)";
+        public override string Status => $"Translating conversation {Name} ({Batch?.Remaining.ToString() ?? "Unknown"} lines remaining)";
 
         public ConversationJob(string filePath, InGameTranslator.LanguageID language)
         {
             FilePath = filePath;
             Language = language;
-            ConversationName = Path.GetFileNameWithoutExtension(filePath);
+            Name = Path.GetFileNameWithoutExtension(filePath);
         }
 
         public override async Task Run()
         {
-            if (!int.TryParse(ConversationName.Split('-')[0], NumberStyles.Any, CultureInfo.InvariantCulture, out int convId))
+            if (!int.TryParse(Name.Split('-')[0], NumberStyles.Any, CultureInfo.InvariantCulture, out int convId))
                 return;
 
-            Dictionary<int, string> replacements = new();
+            List<string> replacements = new();
             List<ConvRepl> conv = new();
-
-            int count = 0;
 
             string? filepath = PoorlyTranslated.ResolveFile(FilePath);
             if (filepath is null)
@@ -55,6 +54,13 @@ namespace PoorlyTranslated
                 string line = array[i];
                 if (i <= 0)
                 {
+                    string[] namesplit = line.Split(new[] { '-' }, 2);
+                    if (namesplit.Length < 2 || !namesplit[1].Equals(Name, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        Logger.LogWarning($"Malformed comversation: {Name}");
+                        return;
+                    }
+
                     // Conversation ID
                     conv.Add(new(line));
                     continue;
@@ -71,25 +77,24 @@ namespace PoorlyTranslated
                 int index = DetermineTranstaleableTextIndex(split);
                 if (index < 0 || split.Length == 1)
                 {
-                    replacements[count] = line;
-                    conv.Add(new(null, count));
-                    count++;
+                    conv.Add(new(null, replacements.Count));
+                    replacements.Add(line);
                     continue;
                 }
 
                 if (index > 0)
                     conv.Add(new(string.Join(" : ", split.Take(index)) + " : "));
-                conv.Add(new(null, count));
-                if (index < split.Length - 1)
-                    conv.Add(new(" : " + string.Join(" : ", split.Skip(index+1))));
 
-                replacements[count] = split[index];
-                count++;
+                conv.Add(new(null, replacements.Count));
+                replacements.Add(split[index]);
+
+                if (index < split.Length - 1)
+                    conv.Add(new(" : " + string.Join(" : ", split.Skip(index + 1))));
             }
 
             if (replacements.Count > 0)
             {
-                Batch = new(replacements, PoorlyTranslated.ConvertLanguage(Language), 5);
+                Batch = new(new ListStringStorage(replacements), PoorlyTranslated.ConvertLanguage(Language), 5);
                 await Batch.Translate();
             }
 
@@ -112,7 +117,7 @@ namespace PoorlyTranslated
         {
             if (strings.Length < 1)
                 return -1;
-            
+
             else if (strings.Length == 1)
                 return 0;
 

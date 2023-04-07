@@ -2,11 +2,11 @@
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PoorlyTranslated
+namespace PoorlyTranslated.TranslationTasks
 {
     public class TranslationTaskBatch<TKey>
     {
-        public Dictionary<TKey, string> Dictionary { get; }
+        public StringStorage<TKey> Storage { get; }
         public string Language { get; }
         public int Iterations { get; }
         public int Remaining => RemainingKeys.Count;
@@ -16,11 +16,12 @@ namespace PoorlyTranslated
         TaskCompletionSource<bool> TaskCompletion = new();
         bool Completed = false;
 
-        public TranslationTaskBatch(Dictionary<TKey, string> dictionary, string language, int iterations) : 
-            this(dictionary, dictionary.Keys, language, iterations) { }
-        public TranslationTaskBatch(Dictionary<TKey, string> dictionary, IEnumerable<TKey> keys, string language, int iterations)
+        public TranslationTaskBatch(StringStorage<TKey> storage, string language, int iterations) :
+            this(storage, storage.Keys, language, iterations)
+        { }
+        public TranslationTaskBatch(StringStorage<TKey> storage, IEnumerable<TKey> keys, string language, int iterations)
         {
-            Dictionary = dictionary;
+            Storage = storage;
             RemainingKeys = new(keys);
             Language = language;
             Iterations = iterations;
@@ -38,13 +39,13 @@ namespace PoorlyTranslated
 
         internal void SetResult(TKey key, string str)
         {
-            lock (Lock) 
+            lock (Lock)
             {
                 if (!RemainingKeys.Contains(key))
                     return;
 
                 RemainingKeys.Remove(key);
-                Dictionary[key] = str;
+                Storage.Set(key, str);
 
                 if (RemainingKeys.Count == 0 && !Completed)
                 {
