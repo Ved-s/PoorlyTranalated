@@ -31,6 +31,9 @@ namespace PoorlyTranslated
 
         public static Regex ConversationRegex = new(@"^\d+(-.+)?.txt$", RegexOptions.Compiled);
 
+        /// To fix calling <see cref="OptionsMenu.SetCurrentlySelectedOfSeries(string, int)"/> from task worker thread
+        internal static int? MenuLanguageSet = null;
+
         public PoorlyTranslated()
         {
             Instance = this;
@@ -41,6 +44,12 @@ namespace PoorlyTranslated
         {
             Runner?.Update();
             ThreadedStringsTranslator.Poke();
+
+            if (MenuLanguageSet.HasValue && RainWorld.processManager.currentMainLoop is OptionsMenu options)
+            {
+                options.SetCurrentlySelectedOfSeries("Language", MenuLanguageSet.Value);
+                MenuLanguageSet = null;
+            }
         }
 
         internal static void InitScreenUpdate(InitializationScreen screen, ref InitializationScreen.InitializationStep step)

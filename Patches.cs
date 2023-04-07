@@ -17,6 +17,8 @@ namespace PoorlyTranslated
         static FieldWrapper<InitializationScreen.InitializationStep> CurreniInitializationStepField = null!;
         static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("PoorlyTranslated_Patches");
 
+        static bool Ignore_OptionsMenu_SetCurrentlySelectedOfSeries = false;
+
         public static void Apply()
         {
             try
@@ -40,6 +42,13 @@ namespace PoorlyTranslated
         }
         private static void OptionsMenu_SetCurrentlySelectedOfSeries(On.Menu.OptionsMenu.orig_SetCurrentlySelectedOfSeries orig, OptionsMenu self, string series, int to)
         {
+            if (Ignore_OptionsMenu_SetCurrentlySelectedOfSeries)
+            {
+                orig(self, series, to);
+                Ignore_OptionsMenu_SetCurrentlySelectedOfSeries = false;
+                return;
+            }
+
             if (series == "Language")
             {
                 InGameTranslator.LanguageID prevlang = PoorlyTranslated.RainWorld.options.language;
@@ -54,7 +63,10 @@ namespace PoorlyTranslated
                     {
                         await t;
                         PoorlyTranslated.RainWorld.options.language = prevlang;
-                        self.SetCurrentlySelectedOfSeries(series, to);
+                        Ignore_OptionsMenu_SetCurrentlySelectedOfSeries = true;
+                        //self.SetCurrentlySelectedOfSeries(series, to);
+
+                        PoorlyTranslated.MenuLanguageSet = to;
                     });
                     return;
                 }
