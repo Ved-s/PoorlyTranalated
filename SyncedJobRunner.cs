@@ -33,7 +33,7 @@ namespace PoorlyTranslated
         List<SyncedJob> ActiveJobs = new();
         object Lock = new();
         int Counter;
-
+        
         static int MaxJobsCount = 10;
         static string StatusTemplate = "<Tasks> tasks remaining, <Translations> strings translated";
 
