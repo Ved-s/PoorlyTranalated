@@ -14,17 +14,22 @@ namespace PoorlyTranslated.Jobs
         private readonly InGameTranslator.LanguageID Language;
         private readonly string Name;
         private readonly string ShortName;
+        private readonly bool IsBroadcast;
 
         private TranslationTaskBatch<int>? Batch;
 
-        public override string Status => $"Translating chatlog {ShortName} ({Batch?.Remaining.ToString() ?? "Unknown"} lines remaining)";
+        public override string Status => $"Translating {(IsBroadcast? "broadcast" : "chatlog")} {ShortName} ({Batch?.Remaining.ToString() ?? "Unknown"} lines remaining)";
 
-        public ChatlogJob(string filePath, InGameTranslator.LanguageID language)
+        public ChatlogJob(string filePath, InGameTranslator.LanguageID language, bool broadcast)
         {
+            IsBroadcast = broadcast;
             FilePath = filePath;
             Language = language;
             Name = Path.GetFileNameWithoutExtension(FilePath);
-            ShortName = Name.StartsWith("chatlog_", StringComparison.InvariantCultureIgnoreCase) ? Name.Substring(8) : Name;
+            ShortName = 
+                Name.StartsWith("chatlog_", StringComparison.InvariantCultureIgnoreCase) ? Name.Substring(8) :
+                Name.StartsWith("lp_", StringComparison.InvariantCultureIgnoreCase) ? Name.Substring(3) : 
+                Name;
         }
 
         public override async Task Run()

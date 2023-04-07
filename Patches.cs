@@ -30,6 +30,7 @@ namespace PoorlyTranslated
                 On.RainWorld.OnModsInit += RainWorld_OnModsInit;
                 On.ModManager.LoadModFromJson += ModManager_LoadModFromJson;
                 On.MoreSlugcats.ChatlogData.getChatlog_ChatlogID += ChatlogData_getChatlog_ChatlogID;
+                On.MoreSlugcats.ChatlogData.getLinearBroadcast += ChatlogData_getLinearBroadcast;
             }
             catch (Exception ex)
             {
@@ -97,6 +98,13 @@ namespace PoorlyTranslated
 
             return orig(id);
         }
+        private static string[] ChatlogData_getLinearBroadcast(On.MoreSlugcats.ChatlogData.orig_getLinearBroadcast orig, int id, bool postPebbles)
+        {
+            string fullpath = $"{PoorlyTranslated.Mod.path}/{PoorlyTranslated.RainWorld.inGameTranslator.SpecificTextFolderDirectory()}/LP_{id}{(postPebbles?"_PEB":"")}.txt";
+            if (File.Exists(fullpath))
+                return File.ReadAllText(fullpath).Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).Skip(1).ToArray();
 
+            return orig(id, postPebbles);
+        }
     }
 }

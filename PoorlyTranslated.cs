@@ -112,12 +112,23 @@ namespace PoorlyTranslated
 
         public static Task VerifyFileTranslations(string path, string filename, InGameTranslator.LanguageID lang)
         {
+            if (!filename.EndsWith(".txt", StringComparison.InvariantCultureIgnoreCase))
+                return Task.CompletedTask;
+
             if (filename == "strings.txt")
                 return Runner.EnqueueJob(new StringsJob(path, lang));
-            else if (ConversationRegex.IsMatch(filename) && lang == RainWorld.inGameTranslator.currentLanguage)
-                return Runner.EnqueueJob(new ConversationJob(path, lang));
-            else if (filename.StartsWith("chatlog_", StringComparison.InvariantCultureIgnoreCase) && lang == RainWorld.inGameTranslator.currentLanguage)
-                return Runner.EnqueueJob(new ChatlogJob(path, lang));
+            
+            if (lang == RainWorld.inGameTranslator.currentLanguage)
+            {
+                if (ConversationRegex.IsMatch(filename))
+                    return Runner.EnqueueJob(new ConversationJob(path, lang));
+
+                if (filename.StartsWith("chatlog_", StringComparison.InvariantCultureIgnoreCase))
+                    return Runner.EnqueueJob(new ChatlogJob(path, lang, false));
+
+                if (filename.StartsWith("lp_", StringComparison.InvariantCultureIgnoreCase))
+                    return Runner.EnqueueJob(new ChatlogJob(path, lang, true));
+            }
 
             return Task.CompletedTask;
         }

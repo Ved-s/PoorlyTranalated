@@ -120,7 +120,6 @@ namespace PoorlyTranslated
                 @new = builder.ToString();
             }
 
-            // TODO: some text <SomeParam> abc -> chicken soup <never> aaaaaaaa -> chicken soup <SomeParam> aaaaaaaa
             return Regex.Replace(@new, @"{\d(?!})|{(?!\d})(.*})?", "");
         }
     }
