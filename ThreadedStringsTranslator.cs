@@ -69,8 +69,28 @@ namespace PoorlyTranslated
                     if (text is null)
                         continue;
 
-                    string newText = translator.PoorlyTranslate(task.Language,text, task.Iterations);
+                    int iterations = task.Iterations;
+                    if (iterations == 0)
+                    {
+                        Logger.LogWarning("Translation task had 0 iterations. Setting to 5.");
+                        iterations = 5;
+                    }
 
+                    int attempts = 0;
+                    string newText;
+                    while (true)
+                    {
+                        if (attempts >= 5)
+                        {
+                            Logger.LogWarning($"Failed to translate to {task.Language}: {text}");
+                            newText = text;
+                            break;
+                        }
+                        newText = translator.PoorlyTranslate(task.Language, text, iterations);
+                        attempts++;
+                        if (!text.Equals(newText, StringComparison.InvariantCultureIgnoreCase))
+                            break;
+                    }
                     task.SetResult(newText);
                 }
                 catch (Exception e)

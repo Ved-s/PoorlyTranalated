@@ -44,7 +44,7 @@ namespace PoorlyTranslated.Jobs
             Dictionary<string, string> strings = new();
 
             foreach (string extStringsPath in PoorlyTranslated.ResolveFiles(FilePath))
-                LoadStrings(extStringsPath, strings);
+                PoorlyTranslated.LoadStrings(extStringsPath, strings);
 
             Logger.LogInfo($"Loaded {strings.Count} strings");
 
@@ -72,27 +72,6 @@ namespace PoorlyTranslated.Jobs
                 writer.Write(kvp.Value);
             }
             writer.Flush();
-        }
-
-        public static void LoadStrings(string path, Dictionary<string, string> dictionary)
-        {
-            string? text = PoorlyTranslated.ReadEncryptedFile(path, 12467);
-            if (text is null)
-                return;
-
-            string[] array = Regex.Split(text, "\r\n");
-            for (int j = 0; j < array.Length; j++)
-            {
-                if (array[j].Contains("///"))
-                {
-                    array[j] = array[j].Split('/')[0].TrimEnd(Array.Empty<char>());
-                }
-                string[] array2 = array[j].Split('|');
-                if (array2.Length >= 2 && !string.IsNullOrEmpty(array2[1]))
-                {
-                    dictionary[array2[0]] = array2[1];
-                }
-            }
         }
     }
 }

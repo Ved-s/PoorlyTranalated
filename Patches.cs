@@ -31,6 +31,7 @@ namespace PoorlyTranslated
                 On.ModManager.LoadModFromJson += ModManager_LoadModFromJson;
                 On.MoreSlugcats.ChatlogData.getChatlog_ChatlogID += ChatlogData_getChatlog_ChatlogID;
                 On.MoreSlugcats.ChatlogData.getLinearBroadcast += ChatlogData_getLinearBroadcast;
+                On.InGameTranslator.LoadShortStrings += InGameTranslator_LoadShortStrings;
             }
             catch (Exception ex)
             {
@@ -86,7 +87,7 @@ namespace PoorlyTranslated
         private static ModManager.Mod ModManager_LoadModFromJson(On.ModManager.orig_LoadModFromJson orig, RainWorld rainWorld, string modpath, string consolepath)
         {
             ModManager.Mod mod = orig(rainWorld, modpath, consolepath);
-            if (mod.id == "ved_s.poorlytranslated")
+            if (rainWorld?.processManager?.currentMainLoop is InitializationScreen && mod.id == "ved_s.poorlytranslated")
                 mod.checksumChanged = false;
             return mod;
         }
@@ -105,6 +106,16 @@ namespace PoorlyTranslated
                 return File.ReadAllText(fullpath).Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).Skip(1).ToArray();
 
             return orig(id, postPebbles);
+        }
+        private static void InGameTranslator_LoadShortStrings(On.InGameTranslator.orig_LoadShortStrings orig, InGameTranslator self)
+        {
+            orig(self);
+            if (PoorlyTranslated.Mod is null)
+                return;
+
+            string fullpath = $"{PoorlyTranslated.Mod.path}/{self.SpecificTextFolderDirectory()}/strings.txt";
+            if (File.Exists(fullpath))
+                PoorlyTranslated.LoadStrings(fullpath, self.shortStrings);
         }
     }
 }

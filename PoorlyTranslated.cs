@@ -19,7 +19,7 @@ using PoorlyTranslated.Jobs;
 
 namespace PoorlyTranslated
 {
-    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "1.0")]
+    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "1.1")]
     public class PoorlyTranslated : BaseUnityPlugin
     {
         public static PoorlyTranslated Instance = null!;
@@ -66,6 +66,9 @@ namespace PoorlyTranslated
                     if (!Runner.HasWork)
                     {
                         Translated = true;
+                        typeof(InGameTranslator)
+                            .GetMethod("LoadShortStrings", BindingFlags.NonPublic | BindingFlags.Instance)
+                            .Invoke(RainWorld.inGameTranslator, null);
                     }
                     else
                     {
@@ -170,6 +173,27 @@ namespace PoorlyTranslated
             string fullpath = Path.Combine(Mod.path, path);
             Directory.CreateDirectory(Path.GetDirectoryName(fullpath));
             return File.CreateText(fullpath);
+        }
+
+        public static void LoadStrings(string path, Dictionary<string, string> dictionary)
+        {
+            string? text = ReadEncryptedFile(path, 12467);
+            if (text is null)
+                return;
+
+            string[] array = Regex.Split(text, "\r\n");
+            for (int j = 0; j < array.Length; j++)
+            {
+                if (array[j].Contains("///"))
+                {
+                    array[j] = array[j].Split('/')[0].TrimEnd(Array.Empty<char>());
+                }
+                string[] array2 = array[j].Split('|');
+                if (array2.Length >= 2 && !string.IsNullOrEmpty(array2[1]))
+                {
+                    dictionary[array2[0]] = array2[1];
+                }
+            }
         }
 
         public static IEnumerable<string> EnumerateFileNames(string path)
