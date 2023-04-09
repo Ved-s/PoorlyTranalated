@@ -2,6 +2,7 @@
 using PoorlyTranslated.TranslationTasks;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -22,17 +23,32 @@ namespace PoorlyTranslated
 
         static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("Translator");
 
+        public static int ThreadsAlive => Threads.Count(t => t.IsAlive);
+
         public static void Poke()
         {
-            Threads.RemoveAll(t => !t.IsAlive);
-            int spawnThreads = Math.Min(Tasks.Count, NumThreads - Threads.Count);
-
-            for (int i = 0; i < spawnThreads; i++)
+            lock (Lock)
             {
-                Thread thread = new(ThreadWorker);
-                thread.Name = $"Translation worker {i}";
-                thread.Start();
-                Threads.Add(thread);
+                Threads.RemoveAll(t => !t.IsAlive);
+                int spawnThreads = Math.Min(Tasks.Count, NumThreads - Threads.Count);
+
+                for (int i = 0; i < spawnThreads; i++)
+                {
+                    Thread thread = new(ThreadWorker);
+                    thread.Name = $"Translation worker {i}";
+                    thread.Start();
+                    Threads.Add(thread);
+                }
+            }
+        }
+
+        public static void Cancel()
+        {
+            lock (Lock)
+            {
+                Tasks.Clear();
+                foreach (Thread thread in Threads)
+                    thread.Interrupt();
             }
         }
 
@@ -59,11 +75,19 @@ namespace PoorlyTranslated
                         if (Tasks.Count == 0)
                             break;
 
-                        int index = Random.Next(Tasks.Count);
-                        task = Tasks[index];
-                        Tasks.RemoveAt(index);
-                        validTask = true;
+                        while (Tasks.Count > 0)
+                        {
+                            int index = Random.Next(Tasks.Count);
+                            task = Tasks[index];
+                            Tasks.RemoveAt(index);
+                            validTask = true;
+
+                            if (task.Active && !task.Cancellation.IsCancellationRequested)
+                                break;
+                        }
                     }
+
+                    Logger.LogInfo($"Starting translation with cancellable token: {task.Cancellation.CanBeCanceled}, canceled: {task.Cancellation.IsCancellationRequested}");
 
                     string? text = task.Text;
                     if (text is null)
@@ -77,8 +101,8 @@ namespace PoorlyTranslated
                     }
 
                     int attempts = 0;
-                    string newText;
-                    while (true)
+                    string? newText = "";
+                    while (!task.Cancellation.IsCancellationRequested)
                     {
                         if (attempts >= 5)
                         {
@@ -86,15 +110,35 @@ namespace PoorlyTranslated
                             newText = text;
                             break;
                         }
-                        newText = translator.PoorlyTranslate(task.Language, text, iterations);
+
+                        newText = translator.PoorlyTranslate(task.Language, text, iterations, task.Cancellation).Result;
                         attempts++;
-                        if (!text.Equals(newText, StringComparison.InvariantCultureIgnoreCase))
+                        if (newText is not null && !text.Equals(newText, StringComparison.InvariantCultureIgnoreCase))
                             break;
                     }
-                    task.SetResult(newText);
+                    if (task.Cancellation.IsCancellationRequested)
+                        continue;
+
+                    task.SetResult(newText ?? "");
+                }
+
+                catch (AggregateException a) when (a.InnerException is OperationCanceledException)
+                {
+                    continue;
+                }
+                catch (OperationCanceledException)
+                {
+                    continue;
+                }
+                catch (ThreadInterruptedException) 
+                {
+                    return;
                 }
                 catch (Exception e)
                 {
+                    if (task.Cancellation.IsCancellationRequested)
+                        continue;
+
                     Logger.LogError($"{e.GetType().Name}: {e.Message}");
                     if (validTask && task.Active)
                     {

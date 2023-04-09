@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace PoorlyTranslated
+namespace PoorlyTranslated.UI
 {
     public class TranslationsOI : OptionInterface
     {

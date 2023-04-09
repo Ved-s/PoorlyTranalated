@@ -1,4 +1,5 @@
-﻿using PoorlyTranslated.TranslationTasks;
+﻿using Kittehface.Framework20;
+using PoorlyTranslated.TranslationTasks;
 using RWCustom;
 using System;
 using System.Collections.Generic;
@@ -16,28 +17,29 @@ namespace PoorlyTranslated.Jobs
         string FilePath;
         InGameTranslator.LanguageID Language;
 
-        PoorStringProvider StatusProvider;
+        PoorStringProvider? StatusProvider;
         TranslationTaskBatch<string>? Batch;
 
-        public override string Status => !Running ? "Job is not running" : StatusProvider.Template
+        public override string Status => (!Running || StatusProvider is null) ? "Job is not running" :
+            StatusProvider.Template
             .Replace("<LINE>", "\n")
             .Replace("<Remaining>", Batch?.Remaining.ToString() ?? "Unknown");
 
         public StringsJob(string filePath, InGameTranslator.LanguageID language)
         {
-            StatusProvider = new($"Translating strings into {language.value} (<Remaining> strings remaining)", PoorlyTranslated.ConvertLanguage(language), 120);
-
             FilePath = filePath;
             Language = language;
         }
 
         public override void Update()
         {
-            StatusProvider.Update();
+            StatusProvider?.Update();
         }
 
         public override async Task Run()
         {
+            StatusProvider = new($"Translating strings into {Language.value} (<Remaining> strings remaining)", PoorlyTranslated.ConvertLanguage(Language), 120, Cancellation);
+
             string langGT = PoorlyTranslated.ConvertLanguage(Language);
             Logger.LogInfo($"Strings job started (lang={Language.value}, langgt={langGT})");
 
@@ -52,7 +54,7 @@ namespace PoorlyTranslated.Jobs
 
             Logger.LogInfo($"Waiting for translator to finish...");
 
-            await Batch.Translate();
+            await Batch.Translate(Cancellation);
 
             Logger.LogInfo($"Writing strings...");
 

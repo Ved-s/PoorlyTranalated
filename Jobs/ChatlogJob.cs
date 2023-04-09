@@ -56,7 +56,7 @@ namespace PoorlyTranslated.Jobs
             }
             
             Batch = new(new ArrayStringStorage(lines, 1), PoorlyTranslated.ConvertLanguage(Language), 5);
-            await Batch.Translate();
+            await Batch.Translate(Cancellation);
 
             using StreamWriter writer = PoorlyTranslated.CreateModFile(FilePath);
             writer.Write('0');

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PoorlyTranslated.TranslationTasks
@@ -16,6 +17,8 @@ namespace PoorlyTranslated.TranslationTasks
         TaskCompletionSource<bool> TaskCompletion = new();
         bool Completed = false;
 
+        internal CancellationToken Cancellation = CancellationToken.None;
+
         public TranslationTaskBatch(StringStorage<TKey> storage, string language, int iterations) :
             this(storage, storage.Keys, language, iterations)
         { }
@@ -27,10 +30,12 @@ namespace PoorlyTranslated.TranslationTasks
             Iterations = iterations;
         }
 
-        public async Task Translate()
+        public async Task Translate(CancellationToken? cancel)
         {
             if (RemainingKeys.Count == 0)
                 return;
+
+            Cancellation = cancel ?? CancellationToken.None;
 
             ThreadedStringsTranslator.AddTasks(RemainingKeys.Select(k => new TranslationTask<TKey>(this, k)));
 

@@ -95,7 +95,7 @@ namespace PoorlyTranslated.Jobs
             if (replacements.Count > 0)
             {
                 Batch = new(new ListStringStorage(replacements), PoorlyTranslated.ConvertLanguage(Language), 5);
-                await Batch.Translate();
+                await Batch.Translate(Cancellation);
             }
 
             using StreamWriter writer = PoorlyTranslated.CreateModFile(FilePath);

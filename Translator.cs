@@ -32,27 +32,53 @@ namespace PoorlyTranslated
 
         public const string AutoLang = "auto";
 
+        public static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("Translator");
+
         public Translator() 
         {
             ServicePointManager.DefaultConnectionLimit = 1000;
         }
 
-        public string PoorlyTranslate(string lang, string text, int times)
+        public async Task<string?> PoorlyTranslate(string lang, string text, int times, CancellationToken? cancel = null)
         {
             string orig = text;
             for (int i = 0; i < times; i++)
             {
-                string newText = Translate(AutoLang, Languages[Random.Next(Languages.Length)], text);
-                if (newText.Length == 0)
-                    return $"TextLen0: {text}";
+                cancel?.ThrowIfCancellationRequested();
+
+                string? newText = await Translate(AutoLang, Languages[Random.Next(Languages.Length)], text, cancel);
+                if (newText is null)
+                    return null;
+
                 text = newText;
             }
-            return FixString(orig, Translate(AutoLang, lang, text));
+
+            cancel?.ThrowIfCancellationRequested();
+            string? final = await Translate(AutoLang, lang, text, cancel);
+            if (final is null)
+                return null;
+
+            return FixString(orig, final);
         }
 
-        public string Translate(string srcLang, string dstLang, string text)
+        public async Task<string?> Translate(string srcLang, string dstLang, string text, CancellationToken? cancel = null)
         {
-            string json = Client.GetStringAsync($"http://translate.googleapis.com/translate_a/single?client=gtx&sl={srcLang}&tl={dstLang}&dt=t&q={text}").Result;
+            if (!cancel.HasValue)
+                Logger.LogWarning("cancel none");
+            else if (!cancel.Value.CanBeCanceled)
+                Logger.LogWarning("can't cancel");
+            else if (cancel?.IsCancellationRequested is true)
+                Logger.LogWarning("canceled???");
+
+            string url = $"http://translate.googleapis.com/translate_a/single?client=gtx&sl={srcLang}&tl={dstLang}&dt=t&q={text}";
+            HttpResponseMessage response = await Client.GetAsync(url, cancel ?? CancellationToken.None);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            cancel?.ThrowIfCancellationRequested();
+
+            string json = await response.Content.ReadAsStringAsync();
 
             if (Json.Deserialize(json) is List<object> array0 && array0.FirstOrDefault() is List<object> array1)
             {
@@ -63,6 +89,13 @@ namespace PoorlyTranslated
                     if (obj is List<object> array2 && array2.FirstOrDefault() is string result)
                         builder.Append(result);
                 }
+
+                if (!cancel.HasValue)
+                    Logger.LogWarning("cancel none");
+                else if (!cancel.Value.CanBeCanceled)
+                    Logger.LogWarning("can't cancel");
+                else if (cancel?.IsCancellationRequested is true)
+                    Logger.LogWarning("canceled???");
 
                 Interlocked.Increment(ref TranslationsDone);
                 return builder.ToString();

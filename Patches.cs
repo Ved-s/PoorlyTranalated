@@ -3,6 +3,7 @@ using Menu;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.Utils;
+using PoorlyTranslated.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
