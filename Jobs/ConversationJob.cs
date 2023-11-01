@@ -74,7 +74,13 @@ namespace PoorlyTranslated.Jobs
                     continue;
 
                 string[] split = Regex.Split(line, " : ");
-                int index = DetermineTranstaleableTextIndex(split);
+
+                if (split.Length == 2 && split[0].Contains("EVENT")) {
+                    conv.Add(new(line));
+                    continue;
+                }
+
+                int index = DetermineTranslateableTextIndex(split);
                 if (index < 0 || split.Length == 1)
                 {
                     conv.Add(new(null, replacements.Count));
@@ -113,7 +119,7 @@ namespace PoorlyTranslated.Jobs
 
         record struct ConvRepl(string? Text, int ReplIndex = -1);
 
-        static int DetermineTranstaleableTextIndex(string[] strings)
+        static int DetermineTranslateableTextIndex(string[] strings)
         {
             if (strings.Length < 1)
                 return -1;

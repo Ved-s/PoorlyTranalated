@@ -19,7 +19,7 @@ using PoorlyTranslated.Jobs;
 
 namespace PoorlyTranslated
 {
-    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "1.1")]
+    [BepInPlugin("ved_s.poorlytranslated", "Poorly Translated Rain World", "1.1.1")]
     public class PoorlyTranslated : BaseUnityPlugin
     {
         public static PoorlyTranslated Instance = null!;
